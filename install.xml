@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+<name>Export Reports to Excel</name>
+<code>export_report_button</code>
+<version>1.0.0.0</version>
+<author>zs-madani</author>
+
+<!-- دکمه و اسپینر -->
+<file path="admin/view/template/extension/report/*.twig">
+<operation>
+<search><![CDATA[<button type="button" id="button-filter" class="btn btn-default"><i class="fa fa-filter"></i> {{ button_filter }}</button>]]></search>
+<add position="after"><![CDATA[
+<a href="javascript:void(0)" id="download-report-btn" onclick="download_report()" data-toggle="tooltip" title="{{ download_button }}" class="btn btn-success">
+<i class="fa fa-download"></i>
+</a>
+<a id="download-report-spin" href="javascript:void(0)" class="btn btn-success" data-toggle="tooltip" title="Please Wait..." style="display:none;">
+<i class="fa fa-circle-o-notch fa-spin"></i>
+</a>
+]]></add>
+</operation>
+</file>
+<file path="admin/view/template/extension/report/product_viewed_info.twig">
+<operation>
+<search><![CDATA[<a href="{{ reset }}" class="btn btn-danger btn-xs"><i class="fa fa-refresh"></i> {{ button_reset }}</a>]]></search>
+<add position="after"><![CDATA[
+<a href="javascript:void(0)" id="download-report-btn" onclick="download_report()" data-toggle="tooltip" title="{{ download_button }}" class="btn btn-success" style="padding: 1px 10px;">
+<i class="fa fa-download"></i>
+</a>
+<a id="download-report-spin" href="javascript:void(0)" class="btn btn-success" data-toggle="tooltip" title="Please Wait..." style="display:none; padding: 1px 10px;">
+<i class="fa fa-circle-o-notch fa-spin"></i>
+</a>
+]]></add>
+</operation>
+</file>
+
+<!-- پیام موفقیت -->
+<file path="admin/view/template/extension/report/*.twig">
+<operation>
+<search><![CDATA[
+{% if success %}
+]]></search>
+<add position="before"><![CDATA[
+<div class="alert alert-success alert-dismissible" id="download_report_success" style="display:none;">
+<i class="fa fa-check-circle"></i> {{ download_success_message }}
+<button type="button" class="close" data-dismiss="alert">&times;</button>
+</div>
+]]></add>
+</operation>
+</file>
+
+<!-- جاوااسکریپت -->
+<file path="admin/view/template/extension/report/*.twig">
+<operation>
+<search index="last"><![CDATA[</script>]]></search>
+<add position="after"><![CDATA[
+<script>
+function download_report(){
+$("#download-report-btn").hide();
+$("#download-report-spin").show();
+$("#download_report_success").hide();
+
+var params = new URLSearchParams(window.location.search);
+var code = params.get('code') || ''; 
+
+var report = 'report/' + code; 
+
+var formData = $('#form-filter').length ? $('#form-filter').serialize() : '';
+var data = formData ? formData + '&' + params.toString() : params.toString();
+
+$.ajax({
+url: 'index.php?route=extension/module/export_report/download&user_token={{ user_token }}&report=' + encodeURIComponent(report),
+type: 'post',
+data: data,
+dataType: 'json',
+success: function(json){
+if(json.success==1){
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+$("#download_report_success").show();
+window.location.href='index.php?route=extension/module/export_report/downloadFile&user_token={{ user_token }}&file='+encodeURIComponent(json.file);
+}else{
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+alert(json.error || 'No Result Found!');
+}
+},
+error: function(xhr,status,error){
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+console.error('Export error:', error, xhr.responseText);
+alert('Export failed! '+error);
+}
+});
+}
+</script>
+
+]]></add>
+</operation>
+</file>
+<file path="admin/view/template/extension/report/product_viewed_info.twig">
+<operation>
+<search index="last"><![CDATA[</div>]]></search>
+<add position="after"><![CDATA[
+<script>
+function download_report(){
+$("#download-report-btn").hide();
+$("#download-report-spin").show();
+$("#download_report_success").hide();
+
+var params = new URLSearchParams(window.location.search);
+var code = params.get('code') || ''; // code واقعی گزارش
+
+var report = 'report/' + code; // دقیقا مطابق key های model_map
+
+var formData = $('#form-filter').length ? $('#form-filter').serialize() : '';
+var data = formData ? formData + '&' + params.toString() : params.toString();
+
+$.ajax({
+url: 'index.php?route=extension/module/export_report/download&user_token={{ user_token }}&report=' + encodeURIComponent(report),
+type: 'post',
+data: data,
+dataType: 'json',
+success: function(json){
+if(json.success==1){
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+$("#download_report_success").show();
+window.location.href='index.php?route=extension/module/export_report/downloadFile&user_token={{ user_token }}&file='+encodeURIComponent(json.file);
+}else{
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+alert(json.error || 'No Result Found!');
+}
+},
+error: function(xhr,status,error){
+$("#download-report-btn").show();
+$("#download-report-spin").hide();
+console.error('Export error:', error, xhr.responseText);
+alert('Export failed! '+error);
+}
+});
+}
+</script>
+
+]]></add>
+</operation>
+</file>
+
+</modification>
