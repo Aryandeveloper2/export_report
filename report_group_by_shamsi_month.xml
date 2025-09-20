@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+<name>Report group by shamsi month</name>
+<code>report_group_by_shamsi_month</code>
+<version>1.0.0.0</version>
+<author>zs-madani</author>
+<!--Sale shiping -->
+<file path="admin/controller/extension/report/sale_shipping.php">
+<operation>
+<search><![CDATA[class ControllerExtensionReportSaleShipping extends Controller {]]></search>
+<add position="after"><![CDATA[
+public function gregorian_to_jalali($g_y, $g_m, $g_d) {
+$g_days_in_month = array(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+$j_days_in_month = array(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
+
+$gy = $g_y - 1600;
+$gm = $g_m - 1;
+$gd = $g_d - 1;
+
+$g_day_no = 365 * $gy + floor(($gy + 3) / 4) - floor(($gy + 99) / 100) + floor(($gy + 399) / 400);
+
+for ($i = 0; $i < $gm; ++$i) {
+$g_day_no += $g_days_in_month[$i];
+}
+$is_leap = ($gy % 4 == 0) && ($gy % 100 != 0) || ($gy % 400 == 0);
+if ($gm > 1 && $is_leap) {
+$g_day_no++;
+}
+
+$g_day_no += $gd;
+$j_day_no = $g_day_no - 79;
+$j_np = floor($j_day_no / 12053);
+$j_day_no = $j_day_no % 12053;
+$jy = 979 + 33 * $j_np + 4 * floor($j_day_no / 1461);
+$j_day_no = $j_day_no % 1461;
+
+if ($j_day_no >= 366) {
+$jy += floor(($j_day_no - 1) / 365);
+$j_day_no = ($j_day_no - 1) % 365;
+}
+
+for ($i = 0; $i < 11 && $j_day_no >= $j_days_in_month[$i]; ++$i) {
+$j_day_no -= $j_days_in_month[$i];
+}
+
+$jm = $i + 1;
+$jd = $j_day_no + 1;
+
+return array($jy, $jm, $jd);
+}
+]]></add>
+</operation>
+<operation>
+<search><![CDATA[$results = $this->model_extension_report_sale->getShipping($filter_data);]]></search>
+<add position="after"><![CDATA[
+if ($filter_group == 'month') {
+$grouped_results = array();
+
+foreach ($results as $result) {
+$timestamp_start = strtotime($result['date_start']);
+$timestamp_end = strtotime($result['date_end']);
+
+list($jyear, $jmonth, $jday) = $this->gregorian_to_jalali(
+date('Y', $timestamp_start),
+date('m', $timestamp_start),
+date('d', $timestamp_start)
+);
+
+$padded_month = str_pad($jmonth, 2, '0', STR_PAD_LEFT);
+$group_key = $jyear . '-' . $padded_month;
+
+if (!isset($grouped_results[$group_key])) {
+$grouped_results[$group_key] = array(
+'date_start' => $result['date_start'],
+'date_end' => $result['date_end'],
+'title' => $result['title'],
+'orders' => 0,
+'total' => 0
+);
+}
+
+$grouped_results[$group_key]['orders'] += $result['orders'];
+$grouped_results[$group_key]['total'] += $result['total'];
+
+if (strtotime($result['date_start']) < strtotime($grouped_results[$group_key]['date_start'])) {
+$grouped_results[$group_key]['date_start'] = $result['date_start'];
+}
+if (strtotime($result['date_end']) > strtotime($grouped_results[$group_key]['date_end'])) {
+$grouped_results[$group_key]['date_end'] = $result['date_end'];
+}
+}
+$results = array_values($grouped_results);
+}
+]]></add>
+</operation>
+</file>
+
+<!--Sale Tax -->
+<file path="admin/controller/extension/report/sale_tax.php">
+<operation>
+<search><![CDATA[class ControllerExtensionReportSaleTax extends Controller {]]></search>
+<add position="after"><![CDATA[
+public function gregorian_to_jalali($g_y, $g_m, $g_d) {
+$g_days_in_month = array(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+$j_days_in_month = array(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
+
+$gy = $g_y - 1600;
+$gm = $g_m - 1;
+$gd = $g_d - 1;
+
+$g_day_no = 365 * $gy + floor(($gy + 3) / 4) - floor(($gy + 99) / 100) + floor(($gy + 399) / 400);
+
+for ($i = 0; $i < $gm; ++$i) {
+$g_day_no += $g_days_in_month[$i];
+}
+$is_leap = ($gy % 4 == 0) && ($gy % 100 != 0) || ($gy % 400 == 0);
+if ($gm > 1 && $is_leap) {
+$g_day_no++;
+}
+
+$g_day_no += $gd;
+$j_day_no = $g_day_no - 79;
+$j_np = floor($j_day_no / 12053);
+$j_day_no = $j_day_no % 12053;
+$jy = 979 + 33 * $j_np + 4 * floor($j_day_no / 1461);
+$j_day_no = $j_day_no % 1461;
+
+if ($j_day_no >= 366) {
+$jy += floor(($j_day_no - 1) / 365);
+$j_day_no = ($j_day_no - 1) % 365;
+}
+
+for ($i = 0; $i < 11 && $j_day_no >= $j_days_in_month[$i]; ++$i) {
+$j_day_no -= $j_days_in_month[$i];
+}
+
+$jm = $i + 1;
+$jd = $j_day_no + 1;
+
+return array($jy, $jm, $jd);
+}
+]]></add>
+</operation>
+<operation>
+<search><![CDATA[$results = $this->model_extension_report_sale->getTaxes($filter_data);]]></search>
+<add position="after"><![CDATA[
+if ($filter_group == 'month') {
+$grouped_results = array();
+
+foreach ($results as $result) {
+$timestamp_start = strtotime($result['date_start']);
+$timestamp_end = strtotime($result['date_end']);
+
+list($jyear, $jmonth, $jday) = $this->gregorian_to_jalali(
+date('Y', $timestamp_start),
+date('m', $timestamp_start),
+date('d', $timestamp_start)
+);
+
+$padded_month = str_pad($jmonth, 2, '0', STR_PAD_LEFT);
+$group_key = $jyear . '-' . $padded_month;
+
+if (!isset($grouped_results[$group_key])) {
+$grouped_results[$group_key] = array(
+'date_start' => $result['date_start'],
+'date_end' => $result['date_end'],
+'title' => $result['title'],
+'orders' => 0,
+'total' => 0
+);
+}
+
+$grouped_results[$group_key]['orders'] += $result['orders'];
+$grouped_results[$group_key]['total'] += $result['total'];
+
+if (strtotime($result['date_start']) < strtotime($grouped_results[$group_key]['date_start'])) {
+$grouped_results[$group_key]['date_start'] = $result['date_start'];
+}
+if (strtotime($result['date_end']) > strtotime($grouped_results[$group_key]['date_end'])) {
+$grouped_results[$group_key]['date_end'] = $result['date_end'];
+}
+}
+$results = array_values($grouped_results);
+}
+]]></add>
+</operation>
+</file>
+<!--Sale Return -->
+<file path="admin/controller/extension/report/sale_return.php">
+<operation>
+<search><![CDATA[class ControllerExtensionReportSaleReturn extends Controller {]]></search>
+<add position="after"><![CDATA[
+public function gregorian_to_jalali($g_y, $g_m, $g_d) {
+$g_days_in_month = array(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+$j_days_in_month = array(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
+
+$gy = $g_y - 1600;
+$gm = $g_m - 1;
+$gd = $g_d - 1;
+
+$g_day_no = 365 * $gy + floor(($gy + 3) / 4) - floor(($gy + 99) / 100) + floor(($gy + 399) / 400);
+
+for ($i = 0; $i < $gm; ++$i) {
+$g_day_no += $g_days_in_month[$i];
+}
+$is_leap = ($gy % 4 == 0) && ($gy % 100 != 0) || ($gy % 400 == 0);
+if ($gm > 1 && $is_leap) {
+$g_day_no++;
+}
+
+$g_day_no += $gd;
+$j_day_no = $g_day_no - 79;
+$j_np = floor($j_day_no / 12053);
+$j_day_no = $j_day_no % 12053;
+$jy = 979 + 33 * $j_np + 4 * floor($j_day_no / 1461);
+$j_day_no = $j_day_no % 1461;
+
+if ($j_day_no >= 366) {
+$jy += floor(($j_day_no - 1) / 365);
+$j_day_no = ($j_day_no - 1) % 365;
+}
+
+for ($i = 0; $i < 11 && $j_day_no >= $j_days_in_month[$i]; ++$i) {
+$j_day_no -= $j_days_in_month[$i];
+}
+
+$jm = $i + 1;
+$jd = $j_day_no + 1;
+
+return array($jy, $jm, $jd);
+}
+]]></add>
+</operation>
+<operation>
+<search><![CDATA[$results = $this->model_extension_report_return->getReturns($filter_data);]]></search>
+<add position="after"><![CDATA[
+if ($filter_group == 'month') {
+$grouped_results = array();
+
+foreach ($results as $result) {
+$timestamp_start = strtotime($result['date_start']);
+$timestamp_end = strtotime($result['date_end']);
+
+list($jyear, $jmonth, $jday) = $this->gregorian_to_jalali(
+date('Y', $timestamp_start),
+date('m', $timestamp_start),
+date('d', $timestamp_start)
+);
+
+$padded_month = str_pad($jmonth, 2, '0', STR_PAD_LEFT);
+$group_key = $jyear . '-' . $padded_month;
+
+if (!isset($grouped_results[$group_key])) {
+$grouped_results[$group_key] = array(
+'date_start' => $result['date_start'],
+'date_end' => $result['date_end'],
+'title' => $result['title'],
+'orders' => 0,
+'total' => 0
+);
+}
+
+$grouped_results[$group_key]['orders'] += $result['orders'];
+$grouped_results[$group_key]['total'] += $result['total'];
+
+if (strtotime($result['date_start']) < strtotime($grouped_results[$group_key]['date_start'])) {
+$grouped_results[$group_key]['date_start'] = $result['date_start'];
+}
+if (strtotime($result['date_end']) > strtotime($grouped_results[$group_key]['date_end'])) {
+$grouped_results[$group_key]['date_end'] = $result['date_end'];
+}
+}
+$results = array_values($grouped_results);
+}
+]]></add>
+</operation>
+</file>
+<!--Sale Order -->
+<file path="admin/controller/extension/report/sale_order.php">
+<operation>
+<search><![CDATA[class ControllerExtensionReportSaleOrder extends Controller {]]></search>
+<add position="after"><![CDATA[
+public function gregorian_to_jalali($g_y, $g_m, $g_d) {
+$g_days_in_month = array(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+$j_days_in_month = array(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
+
+$gy = $g_y - 1600;
+$gm = $g_m - 1;
+$gd = $g_d - 1;
+
+$g_day_no = 365 * $gy + floor(($gy + 3) / 4) - floor(($gy + 99) / 100) + floor(($gy + 399) / 400);
+
+for ($i = 0; $i < $gm; ++$i) {
+$g_day_no += $g_days_in_month[$i];
+}
+$is_leap = ($gy % 4 == 0) && ($gy % 100 != 0) || ($gy % 400 == 0);
+if ($gm > 1 && $is_leap) {
+$g_day_no++;
+}
+
+$g_day_no += $gd;
+$j_day_no = $g_day_no - 79;
+$j_np = floor($j_day_no / 12053);
+$j_day_no = $j_day_no % 12053;
+$jy = 979 + 33 * $j_np + 4 * floor($j_day_no / 1461);
+$j_day_no = $j_day_no % 1461;
+
+if ($j_day_no >= 366) {
+$jy += floor(($j_day_no - 1) / 365);
+$j_day_no = ($j_day_no - 1) % 365;
+}
+
+for ($i = 0; $i < 11 && $j_day_no >= $j_days_in_month[$i]; ++$i) {
+$j_day_no -= $j_days_in_month[$i];
+}
+
+$jm = $i + 1;
+$jd = $j_day_no + 1;
+
+return array($jy, $jm, $jd);
+}
+]]></add>
+</operation>
+<operation>
+<search><![CDATA[$results = $this->model_extension_report_sale->getOrders($filter_data);]]></search>
+<add position="after"><![CDATA[
+if ($filter_group == 'month') {
+$grouped_results = array();
+
+foreach ($results as $result) {
+$timestamp_start = strtotime($result['date_start']);
+$timestamp_end = strtotime($result['date_end']);
+
+list($jyear, $jmonth, $jday) = $this->gregorian_to_jalali(
+date('Y', $timestamp_start),
+date('m', $timestamp_start),
+date('d', $timestamp_start)
+);
+
+$padded_month = str_pad($jmonth, 2, '0', STR_PAD_LEFT);
+$group_key = $jyear . '-' . $padded_month;
+
+if (!isset($grouped_results[$group_key])) {
+$grouped_results[$group_key] = array(
+'date_start' => $result['date_start'],
+'date_end' => $result['date_end'],
+'title' => $result['title'],
+'orders' => 0,
+'total' => 0
+);
+}
+
+$grouped_results[$group_key]['orders'] += $result['orders'];
+$grouped_results[$group_key]['total'] += $result['total'];
+
+if (strtotime($result['date_start']) < strtotime($grouped_results[$group_key]['date_start'])) {
+$grouped_results[$group_key]['date_start'] = $result['date_start'];
+}
+if (strtotime($result['date_end']) > strtotime($grouped_results[$group_key]['date_end'])) {
+$grouped_results[$group_key]['date_end'] = $result['date_end'];
+}
+}
+$results = array_values($grouped_results);
+}
+]]></add>
+</operation>
+</file>
+</modification>

@@ -1,7 +1,6 @@
 <?php
 require_once(DIR_SYSTEM . 'library/jdf.php');
-class ControllerExtensionModuleExportReport extends Controller
-{
+class ControllerExtensionModuleExportReport extends Controller{
     private $error = [];
 
     private function formatDateForCSV($date)
